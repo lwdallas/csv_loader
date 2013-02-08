@@ -140,7 +140,7 @@ function import_file($filename){
 		/* NOTE: if you don't use filedates in your naming convention remove the file_date from the insert below */
 
 		// if the first row has no headers, use the default format
-		if ($columns[0]=='MC'){
+		if ($columns[0]=='ID'){
 			/* TODO
 			put a default table structure in here ESPECIALLY if you don't have headers in all your files
 			you also need a better sanity check than 'id'--it is an example
@@ -150,7 +150,7 @@ function import_file($filename){
 			*/
 
 			//$sql='insert into '.$argv[2].' ( id, name, pet, file_date) VALUES ( $1, $2, $3,'."'$file_date'".')';
-			$sql='insert into '.$argv[2].' ( Source,RegistrationID,FirstName,MiddleInitial,LastName,Suffix,MailingAddress,MailingCity,MailingState,MailingZip,MailingCountry,PhysicalAddress,PhysicalCity,PhysicalState,PhysicalZip,PhysicalCountry,TopLeftLabel,TopLeftData,BottomLeftLabel,BottomLeftData,TopRightLabel,TopRightData,BottomRightLabel,BottomRightData,CardImageFrontFilename,CardImageBackFilename,CarrierImageFrontFilename,CarrierCertNum,CarrierCertDate, file_date) VALUES ( $1, $2, $3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,'."'$file_date'".')';
+			$sql='insert into '.$argv[2].' ( id, name, pet, file_date) VALUES ( $1, $2, $3,'."'$file_date'".')';
 			echo "\nsql=>".$sql;
 		} else {
 			// else load the headers and dynamically build the prepared stmt and add any missing columns
