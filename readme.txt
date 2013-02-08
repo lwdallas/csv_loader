@@ -25,3 +25,8 @@ I hope this is helpful to you. Please let me know!
 --Lonnie Webb, PMP
 lonnie.webb@gmail.com
 
+Version 0.01
+Inital Release
+
+Version 0.02
+Auto pipe handling, because people suck and occasionally use pipes.

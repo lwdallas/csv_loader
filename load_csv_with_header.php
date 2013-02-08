@@ -17,16 +17,20 @@
 	For my application I needed to load several files with date in their name and used that in the record.
 	Just drop that column afterward if you don't need it.
 
-	Copyright © 2013 Lonnie Webb. All Rights Reserved
-	Free(as in beer)to use, but please include this notice and send me a note.
-	lonnie.webb@gmail.com
+	Version 0.01
+	Inital Release
+
+	Version 0.02
+	Auto pipe handling, because people suck and occasionally use pipes.
 
  */
 
 $error_count=0;
+$seperator=',';
+$auto_use_pipes=false;
 
 if (sizeof( $argv )<= 1){
-	die("\nUSAGE:\n load_csv_with_header file_name table_name host dbname user password\n\nLoad CSV files into an existing table.  It doesn't have to have columns initially.\nModify the TODO line in the source if you haven't already.\n");
+	die("\nUSAGE:\n load_csv_with_header file_name table_name host dbname user password [--auto-use-pipes] \n\nLoad CSV files into an existing table.  It doesn't have to have columns initially.\nModify the TODO line in the source if you haven't already.\nOptional auto-use-pipes feature detects pipes in the header and changes the seperator to pipes as needed.\n");
 }
 
 main();
@@ -36,7 +40,7 @@ echo "\n---\nErrors=$error_count\n---\n";
 function main(){
 
 	$filename='';
-	global $argv;
+	global $argv, $seperator, $auto_use_pipes;
 
 	// open pg connection
 	echo 'open pg connection: host='.$argv[3].' dbname='.$argv[4].' user='.$argv[5].' password='.$argv[6]."\n";
@@ -47,13 +51,21 @@ function main(){
 
 	truncate_table( $dbh, $argv[2] );
 	try{
-	add_date_column( $dbh, $argv[2], 'file_date' );
+		add_date_column( $dbh, $argv[2], 'file_date' );
 	} catch(Exception $e){
 		// do nothing, this exception is allowed
 	}
 
 	// close connection
 	pg_close($dbh);
+
+	foreach ($argv as $arg) {
+		if ('--auto-use-pipes'==$arg){
+			$auto_use_pipes=true;
+			echo "AUTO_USE_PIPES=TRUE\n";
+			break;
+		}
+	}
 
 	foreach (glob( $argv[1] ) as $filename){
 		import_file($filename);
@@ -91,7 +103,7 @@ function truncate_table( $dbh, $table_name ){
 }
 
 function import_file($filename){
-	global $argv;
+	global $argv, $seperator, $auto_use_pipes;
 
 	echo "\nimporting $filename\n";
 
@@ -109,9 +121,16 @@ function import_file($filename){
 
 	// initialize a loop to go through each line of the file
 	// create array for columns
-	if ($columns = fgetcsv($fp,1024)) {
+	if ($columns = fgetcsv($fp,1024, $seperator)) {
 
-		//echo "\nheader:\n".implode( ",", $columns);
+		// check for pipes
+		if ($auto_use_pipes && stripos( $columns[0], '|' )){
+			$seperator = '|';
+			echo "Seperator is now: ".$seperator."\n";
+			$columns=explode('|', $columns[0]);
+		}
+
+	echo "\nheader:\n".implode( $seperator, $columns);
 
 		// get the date for the file
 		// assuming in the format cards_YYYYMMDD_xxxx.csv
@@ -121,16 +140,17 @@ function import_file($filename){
 		/* NOTE: if you don't use filedates in your naming convention remove the file_date from the insert below */
 
 		// if the first row has no headers, use the default format
-		if ($columns[0]=='ID'){
+		if ($columns[0]=='MC'){
 			/* TODO
 			put a default table structure in here ESPECIALLY if you don't have headers in all your files
-			you also need a better sanity check than 'ID'--it is an example
+			you also need a better sanity check than 'id'--it is an example
 
 			This criteria occured for me when I had a datafile that had no headers but followed the default format.
 			I don't know why but my data was always the same in the first column if there was no data.  Go figure.
 			*/
 
-			$sql='insert into '.$argv[2].' ( id, name, pet, file_date) VALUES ( $1, $2, $3,'."'$file_date'".')';
+			//$sql='insert into '.$argv[2].' ( id, name, pet, file_date) VALUES ( $1, $2, $3,'."'$file_date'".')';
+			$sql='insert into '.$argv[2].' ( Source,RegistrationID,FirstName,MiddleInitial,LastName,Suffix,MailingAddress,MailingCity,MailingState,MailingZip,MailingCountry,PhysicalAddress,PhysicalCity,PhysicalState,PhysicalZip,PhysicalCountry,TopLeftLabel,TopLeftData,BottomLeftLabel,BottomLeftData,TopRightLabel,TopRightData,BottomRightLabel,BottomRightData,CardImageFrontFilename,CardImageBackFilename,CarrierImageFrontFilename,CarrierCertNum,CarrierCertDate, file_date) VALUES ( $1, $2, $3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,'."'$file_date'".')';
 			echo "\nsql=>".$sql;
 		} else {
 			// else load the headers and dynamically build the prepared stmt and add any missing columns
@@ -174,7 +194,9 @@ function import_file($filename){
 	global $error_count;
 
 	$count=0;
-	while($csv_line = fgetcsv($fp,1024)) {
+	while($csv_line = fgetcsv($fp,1024, $seperator)) {
+
+echo "\nline:\n".implode( $seperator, $csv_line );
 
 		$fields=array();
 		$count++;
